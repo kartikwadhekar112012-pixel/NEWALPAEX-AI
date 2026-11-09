@@ -1,2 +1,285 @@
-# NEWALPAEX-AI
-An advanced AI assistant designed to deliver intelligent conversations, smart automation, coding assistance, document analysis, and next-generation AI experiences.
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080d18">
+<title>NEWALPAEX-AI</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+font-family:Arial,sans-serif;
+background:#080d18;color:#f1f5f9;
+height:100vh;overflow:hidden
+}
+.app{display:flex;height:100vh}
+.sidebar{
+width:260px;background:#0d1422;
+border-right:1px solid #202b3d;
+padding:18px;display:flex;flex-direction:column
+}
+.logo{font-size:23px;font-weight:bold;color:#65d6ff;margin-bottom:25px}
+.newchat{
+background:#17263a;color:white;border:1px solid #30435c;
+padding:13px;border-radius:10px;cursor:pointer;
+text-align:left;font-size:15px
+}
+.history{margin-top:25px;overflow:auto;flex:1}
+.history h4{color:#8292a8;font-size:12px;margin-bottom:12px}
+.history button{
+display:block;width:100%;padding:11px;margin-bottom:5px;
+background:transparent;color:#cbd5e1;border:0;
+text-align:left;border-radius:8px;cursor:pointer
+}
+.history button:hover{background:#19263a}
+.sidebar-footer{color:#64748b;font-size:12px}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{
+height:65px;border-bottom:1px solid #202b3d;
+display:flex;align-items:center;justify-content:space-between;
+padding:0 22px
+}
+.topbar strong{font-size:17px}
+.status{font-size:12px;color:#5ee0a0}
+.chat{
+flex:1;overflow-y:auto;padding:30px 16px;
+display:flex;flex-direction:column;gap:22px
+}
+.welcome{margin:auto;text-align:center;max-width:550px}
+.welcome h1{font-size:35px;margin-bottom:12px}
+.welcome h1 span{color:#65d6ff}
+.welcome p{color:#94a3b8;line-height:1.6}
+.message{
+max-width:800px;width:100%;margin:0 auto;
+line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere
+}
+.user{background:#142238;padding:15px 18px;border-radius:14px}
+.assistant{padding:5px 4px}
+.msg-label{font-size:12px;color:#65d6ff;margin-bottom:7px}
+.copy{
+margin-top:10px;background:#17263a;color:#cbd5e1;
+border:1px solid #30435c;padding:6px 10px;
+border-radius:7px;cursor:pointer
+}
+.composer-wrap{padding:15px 18px 20px}
+.composer{
+max-width:850px;margin:auto;display:flex;gap:10px;
+background:#111c2d;border:1px solid #30435c;
+border-radius:15px;padding:10px
+}
+textarea{
+flex:1;resize:none;background:transparent;color:white;
+border:0;outline:none;font:15px Arial;
+min-height:42px;max-height:150px;padding:12px
+}
+.send{
+background:#27b8ed;color:#07111d;border:0;
+border-radius:10px;padding:0 19px;font-weight:bold;
+cursor:pointer
+}
+.send:disabled{opacity:.5}
+.note{text-align:center;color:#64748b;font-size:11px;margin-top:10px}
+@media(max-width:650px){
+.sidebar{width:65px;padding:10px}
+.logo{font-size:12px;overflow:hidden}
+.newchat{font-size:0;text-align:center;padding:12px}
+.newchat:after{content:"+";font-size:22px}
+.history,.sidebar-footer{display:none}
+.topbar{padding:0 13px}
+.chat{padding:20px 12px}
+.welcome h1{font-size:28px}
+.composer-wrap{padding:10px}
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+<aside class="sidebar">
+<div class="logo">NEWALPAEX</div>
+<button class="newchat" onclick="newChat()">＋ New Chat</button>
+<div class="history">
+<h4>RECENT CHATS</h4>
+<div id="history"></div>
+</div>
+<div class="sidebar-footer">NEWALPAEX-AI • Preview</div>
+</aside>
+
+<main class="main">
+<header class="topbar">
+<strong>NEWALPAEX-AI</strong>
+<span class="status">● Online</span>
+</header>
+
+<section class="chat" id="chat">
+<div class="welcome" id="welcome">
+<h1>Welcome to <span>NEWALPAEX</span></h1>
+<p>Your AI assistant for learning, ideas, research and creativity.</p>
+</div>
+</section>
+
+<div class="composer-wrap">
+<div class="composer">
+<textarea id="prompt" placeholder="Message NEWALPAEX-AI..." rows="1"></textarea>
+<button class="send" id="send" onclick="sendMessage()">Send</button>
+</div>
+<div class="note">AI responses require a configured backend. Verify important information.</div>
+</div>
+</main>
+</div>
+
+<script>
+/*
+IMPORTANT:
+Replace this URL after deploying your backend.
+Never put your private API key in this file.
+*/
+const API_URL = "https://YOUR-BACKEND-DOMAIN/api/chat";
+
+let messages = [];
+let chats = JSON.parse(localStorage.getItem("newalpaex_chats") || "[]");
+let currentId = Date.now().toString();
+
+const chatBox = document.getElementById("chat");
+const promptBox = document.getElementById("prompt");
+const sendButton = document.getElementById("send");
+
+function saveChats(){
+localStorage.setItem("newalpaex_chats",JSON.stringify(chats));
+renderHistory();
+}
+
+function renderHistory(){
+const history=document.getElementById("history");
+history.innerHTML="";
+chats.slice().reverse().forEach(item=>{
+const btn=document.createElement("button");
+btn.textContent=item.title;
+btn.onclick=()=>openChat(item.id);
+history.appendChild(btn);
+});
+}
+
+function newChat(){
+messages=[];
+currentId=Date.now().toString();
+chatBox.innerHTML=`
+<div class="welcome" id="welcome">
+<h1>Welcome to <span>NEWALPAEX</span></h1>
+<p>Your AI assistant for learning, ideas, research and creativity.</p>
+</div>`;
+promptBox.value="";
+}
+
+function openChat(id){
+const selected=chats.find(c=>c.id===id);
+if(!selected)return;
+currentId=selected.id;
+messages=selected.messages.map(m=>({...m}));
+chatBox.innerHTML="";
+messages.forEach(m=>addMessage(m.role,m.content));
+}
+
+function addMessage(role,content){
+const welcome=document.getElementById("welcome");
+if(welcome)welcome.remove();
+
+const wrap=document.createElement("div");
+wrap.className="message "+(role==="user"?"user":"assistant");
+
+const label=document.createElement("div");
+label.className="msg-label";
+label.textContent=role==="user"?"YOU":"NEWALPAEX AI";
+
+const body=document.createElement("div");
+body.textContent=content;
+
+wrap.append(label,body);
+
+if(role==="assistant"){
+const copy=document.createElement("button");
+copy.className="copy";
+copy.textContent="Copy";
+copy.onclick=()=>{
+navigator.clipboard.writeText(content);
+copy.textContent="Copied";
+};
+wrap.appendChild(copy);
+}
+
+chatBox.appendChild(wrap);
+chatBox.scrollTop=chatBox.scrollHeight;
+}
+
+async function sendMessage(){
+const text=promptBox.value.trim();
+if(!text||sendButton.disabled)return;
+
+promptBox.value="";
+messages.push({role:"user",content:text});
+addMessage("user",text);
+
+sendButton.disabled=true;
+sendButton.textContent="...";
+
+const loading=document.createElement("div");
+loading.className="message assistant";
+loading.textContent="NEWALPAEX AI is thinking...";
+chatBox.appendChild(loading);
+
+try{
+if(API_URL.includes("YOUR-BACKEND-DOMAIN")){
+throw new Error("Backend is not connected yet. Configure API_URL after backend deployment.");
+}
+
+const response=await fetch(API_URL,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({messages})
+});
+
+if(!response.ok)throw new Error("Server error: "+response.status);
+
+const data=await response.json();
+if(typeof data.reply!=="string")throw new Error("Invalid server response.");
+
+loading.remove();
+messages.push({role:"assistant",content:data.reply});
+addMessage("assistant",data.reply);
+
+const existing=chats.find(c=>c.id===currentId);
+if(existing){
+existing.messages=messages.map(m=>({...m}));
+}else{
+chats.push({
+id:currentId,
+title:text.slice(0,35),
+messages:messages.map(m=>({...m}))
+});
+}
+saveChats();
+
+}catch(error){
+loading.remove();
+addMessage("assistant","Connection error: "+error.message);
+}
+finally{
+sendButton.disabled=false;
+sendButton.textContent="Send";
+}
+}
+
+promptBox.addEventListener("keydown",e=>{
+if(e.key==="Enter"&&!e.shiftKey){
+e.preventDefault();
+sendMessage();
+}
+});
+
+renderHistory();
+</script>
+</body>
+</html>
+
